@@ -1,0 +1,113 @@
+#!/bin/bash
+
+usage="Usage: subgeezer svn_repository_url git_repository_name
+Example: subgeezer http://svn.symfony-project.com/plugins/sfDoctrineGuardPlugin/trunk sfDoctrineGuardPlugin"
+
+err[1]="Invalid command"
+err[2]="SVN client is required"
+err[3]="Git client is required"
+
+# Check for SVN repo URL argument
+if [ -z "$1" ]
+then
+  #echo ${err[1]}
+  echo "$usage"
+  exit 1
+else
+  svn_repo=$1
+fi
+
+# Check for Git repo name argument
+if [ -z "$2" ]
+then
+  echo ${err[1]}
+  echo "$usage"
+  exit 1
+else
+  git_repo=$2
+fi
+
+# Check for SVN client
+if [ -z `which svn` ]
+then
+  echo "${err[2]}, exiting..."
+  exit 2
+fi
+
+# Check for Git client
+if [ -z `which git` ]
+then
+  echo "${err[3]}, exiting..."
+  exit 3
+fi
+
+"$(svn checkout "$svn_repo" "$git_repo")"
+
+# Fetch and convert credentials in the log
+while read line; do
+  authors=`awk -F '|' '/^r/ {sub("^ ", "", $2); sub(" $", "", $2); print $2";"}' | sort -u`
+done < <(svn log -q "$git_repo")
+
+OIFS=$IFS
+IFS=";"
+
+echo "Starting credential conversion from 'username' to 'Forename Surname <email@address.com>'"
+echo "Entering empty values will cause a fallback to 'username <username>'"
+
+`touch authors.txt`
+`cat /dev/null > authors.txt`
+
+for author in $authors
+do
+  trimmed_author=`echo -n $author | tr -d "\n"`
+  echo "Please define Git info for user $trimmed_author: "
+  read -p "Forename: " forename
+  read -p "Surname: " surname
+  read -p "Email: " email
+
+  if [[ -z $forename && -z $surname ]]
+  then
+    forename=$trimmed_author
+  fi
+
+  if [ -z $email ]
+  then
+    email=$trimmed_author
+  fi
+
+  echo "Adding credentials: $forename $surname <$email>"
+  echo "$trimmed_author = $forename $surname <$email>" >> authors.txt
+done
+
+# Convert SVN ignore to .gitignore
+"$(git svn clone "$svn_repo" --no-metadata -A authors.txt --stdlayout ~/temp)"
+`cd ~/temp`
+`git svn show-ignore > .gitignore`
+`git add .gitignore`
+`git commit -m 'Convert svn:ignore properties to .gitignore.'`
+
+# Create bare repository
+"$(git init --bare $git_repo.git)"
+"$(cd $git_repo.git)"
+`git symbolic-ref HEAD refs/heads/trunk`
+
+# Push temporary repository to the bare repository
+`cd ~/temp`
+"$(git remote add bare $git_repo.git)"
+`git config remote.bare.push 'refs/remotes/*:refs/heads/*'`
+`git push bare`
+
+# Rename trunk to master
+"$(cd $git_repo.git)"
+`git branch -m trunk master`
+
+# Clean up branches and tags converting them to actual Git tags
+"$(cd $git_repo.git)"
+"$(git for-each-ref --format='%(refname)' refs/heads/tags | cut -d / -f 4 |
+while read ref
+do
+  git tag "$ref" "refs/heads/tags/$ref";
+  git branch -D "tags/$ref";
+done)"
+
+exit 0
