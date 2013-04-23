@@ -1,31 +1,19 @@
 #!/bin/bash
 
-usage="Usage: subgeezer svn_repository_url git_repository_name
-Example: subgeezer http://svn.symfony-project.com/plugins/sfDoctrineGuardPlugin/trunk sfDoctrineGuardPlugin"
+usage="Usage: subgeezer [options] svn_repository_url git_repository_path"
+help="subgeezer SVN to Git converter
+
+Usage: subgeezer [options] svn_repository_url git_repository_path
+
+Options:
+  -h, --help    Display help
+  -n            Prompt for Git User <email> to convert SVN usernames in log
+
+Example: subgeezer -n http://swfobject.googlecode.com/svn/trunk/ ~/swfObject.git"
 
 err[1]="Invalid command"
 err[2]="SVN client is required"
 err[3]="Git client is required"
-
-# Check for SVN repo URL argument
-if [ -z "$1" ]
-then
-  #echo ${err[1]}
-  echo "$usage"
-  exit 1
-else
-  svn_repo=$1
-fi
-
-# Check for Git repo name argument
-if [ -z "$2" ]
-then
-  echo ${err[1]}
-  echo "$usage"
-  exit 1
-else
-  git_repo=$2
-fi
 
 # Check for SVN client
 if [ -z `which svn` ]
@@ -41,29 +29,72 @@ then
   exit 3
 fi
 
-"$(svn checkout "$svn_repo" "$git_repo")"
+# Check for command formatting exceptions
+if [[ -z "$@" ]]
+then
+  echo "${err[1]}"
+  echo "${usage}"
+  exit 1
+elif [[ "$1" == "--help" || "$1" == "-h" ]]
+then
+  echo "${help}"
+  exit 0
+elif [[ "$#" < 2 ]]
+then
+  echo "${err[1]}"
+  echo "${usage}"
+  exit 1
+fi
+
+# Parse command arguments
+if [ "$1" == "-n" ]
+then
+  parse_names=true
+  svn_repo=$2
+  git_repo=$3
+else
+  parse_names=false
+  svn_repo=$1
+  git_repo=$2
+fi
+
+# Extract basename of the Git repository
+git_repo_filename=${git_repo##*/}
+git_repo_basename=${git_repo_filename%.git}
+
+# Ensure temp folder exists
+test -d ~/temp || mkdir -p ~/temp
+cd ~/temp
+svn checkout $svn_repo $git_repo_basename
 
 # Fetch and convert credentials in the log
 while read line; do
   authors=`awk -F '|' '/^r/ {sub("^ ", "", $2); sub(" $", "", $2); print $2";"}' | sort -u`
-done < <(svn log -q "$git_repo")
+done < <(svn log -q $git_repo_basename)
+
+if $parse_names;
+then
+  echo "Starting credential conversion from 'username' to 'Forename Surname <email@address.com>'"
+  echo "Entering empty values will cause a fallback to 'username <username>'"
+else
+  echo "No credential conversion, falling back to 'username <username>'"
+fi
+
+touch ~/temp/authors.txt
+cat /dev/null > ~/temp/authors.txt
 
 OIFS=$IFS
 IFS=";"
-
-echo "Starting credential conversion from 'username' to 'Forename Surname <email@address.com>'"
-echo "Entering empty values will cause a fallback to 'username <username>'"
-
-`touch authors.txt`
-`cat /dev/null > authors.txt`
-
 for author in $authors
 do
   trimmed_author=`echo -n $author | tr -d "\n"`
-  echo "Please define Git info for user $trimmed_author: "
-  read -p "Forename: " forename
-  read -p "Surname: " surname
-  read -p "Email: " email
+  if $parse_names;
+  then
+    echo "Please define Git info for user $trimmed_author: "
+    read -p "Forename: " forename
+    read -p "Surname: " surname
+    read -p "Email: " email
+  fi
 
   if [[ -z $forename && -z $surname ]]
   then
@@ -76,38 +107,36 @@ do
   fi
 
   echo "Adding credentials: $forename $surname <$email>"
-  echo "$trimmed_author = $forename $surname <$email>" >> authors.txt
+  echo "$trimmed_author = $forename $surname <$email>" >> ~/temp/authors.txt
 done
 
 # Convert SVN ignore to .gitignore
-"$(git svn clone "$svn_repo" --no-metadata -A authors.txt --stdlayout ~/temp)"
-`cd ~/temp`
-`git svn show-ignore > .gitignore`
-`git add .gitignore`
-`git commit -m 'Convert svn:ignore properties to .gitignore.'`
+git svn clone $svn_repo --no-metadata -A ~/temp/authors.txt --stdlayout ~/temp
+git svn show-ignore > .gitignore
+git add .gitignore
+git commit -m 'Convert svn:ignore properties to .gitignore.'
 
 # Create bare repository
-"$(git init --bare $git_repo.git)"
-"$(cd $git_repo.git)"
-`git symbolic-ref HEAD refs/heads/trunk`
+git init --bare $git_repo
+cd $git_repo
+git symbolic-ref HEAD refs/heads/trunk
 
 # Push temporary repository to the bare repository
-`cd ~/temp`
-"$(git remote add bare $git_repo.git)"
-`git config remote.bare.push 'refs/remotes/*:refs/heads/*'`
-`git push bare`
+cd ~/temp
+git remote add bare $git_repo
+git config remote.bare.push 'refs/remotes/*:refs/heads/*'
+git push bare
 
 # Rename trunk to master
-"$(cd $git_repo.git)"
-`git branch -m trunk master`
+cd $git_repo
+git branch -m trunk master
 
 # Clean up branches and tags converting them to actual Git tags
-"$(cd $git_repo.git)"
-"$(git for-each-ref --format='%(refname)' refs/heads/tags | cut -d / -f 4 |
+git for-each-ref --format='%(refname)' refs/heads/tags | cut -d / -f 4 |
 while read ref
 do
   git tag "$ref" "refs/heads/tags/$ref";
   git branch -D "tags/$ref";
-done)"
+done
 
 exit 0
