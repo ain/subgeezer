@@ -3,7 +3,7 @@
 usage="Usage: subgeezer [options] svn_root_url git_repository_path"
 help="subgeezer SVN to Git converter
 
-Usage: subgeezer [options] svn_repository_url git_repository_path
+${usage}
 
 Options:
   -h, --help    Display help
