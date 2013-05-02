@@ -1,6 +1,6 @@
 #!/bin/bash
 
-usage="Usage: subgeezer [options] svn_repository_url git_repository_path"
+usage="Usage: subgeezer [options] svn_root_url git_repository_path"
 help="subgeezer SVN to Git converter
 
 Usage: subgeezer [options] svn_repository_url git_repository_path
@@ -9,11 +9,12 @@ Options:
   -h, --help    Display help
   -n            Prompt for Git User <email> to convert SVN usernames in log
 
-Example: subgeezer -n http://swfobject.googlecode.com/svn/trunk/ ~/swfObject.git"
+Example: subgeezer -n http://swfobject.googlecode.com/svn ~/swfObject.git"
 
 err[1]="Invalid command"
 err[2]="SVN client is required"
 err[3]="Git client is required"
+err[4]="svn2git is required, see https://github.com/nirvdrum/svn2git"
 
 # Check for SVN client
 if [ -z `which svn` ]
@@ -27,6 +28,13 @@ if [ -z `which git` ]
 then
   echo "${err[3]}, exiting..."
   exit 3
+fi
+
+# Check for svn2git
+if [ -z `which svn2git` ]
+then
+  echo "${err[4]}, exiting..."
+  exit 4
 fi
 
 # Check for command formatting exceptions
@@ -49,28 +57,23 @@ fi
 # Parse command arguments
 if [ "$1" == "-n" ]
 then
-  parse_names=true
+  prompt_author=true
   svn_repo=$2
   git_repo=$3
 else
-  parse_names=false
+  prompt_author=false
   svn_repo=$1
   git_repo=$2
 fi
 
-# Extract basename of the Git repository
-git_repo_filename=${git_repo##*/}
-git_repo_basename=${git_repo_filename%.git}
-
 # Ensure temp folder exists
 test -d ~/temp || mkdir -p ~/temp
 cd ~/temp
-svn checkout $svn_repo $git_repo_basename
 
 # Fetch and convert credentials in the log
 while read line; do
   authors=`awk -F '|' '/^r/ {sub("^ ", "", $2); sub(" $", "", $2); print $2";"}' | sort -u`
-done < <(svn log -q $git_repo_basename)
+done < <(svn log -q $svn_repo)
 
 if $parse_names;
 then
@@ -88,55 +91,19 @@ IFS=";"
 for author in $authors
 do
   trimmed_author=`echo -n $author | tr -d "\n"`
-  if $parse_names;
+  if $prompt_author;
   then
     echo "Please define Git info for user $trimmed_author: "
     read -p "Forename: " forename
     read -p "Surname: " surname
     read -p "Email: " email
   fi
-
-  if [[ -z $forename && -z $surname ]]
-  then
-    forename=$trimmed_author
-  fi
-
-  if [ -z $email ]
-  then
-    email=$trimmed_author
-  fi
-
-  echo "Adding credentials: $forename $surname <$email>"
-  echo "$trimmed_author = $forename $surname <$email>" >> ~/temp/authors.txt
+  echo "$trimmed_author = ${forename:-$trimmed_author} ${surname} <${email:-$trimmed_author}>" >> ~/temp/authors.txt
 done
 
-# Convert SVN ignore to .gitignore
-git svn clone $svn_repo --no-metadata -A ~/temp/authors.txt --stdlayout ~/temp
-git svn show-ignore > .gitignore
-git add .gitignore
-git commit -m 'Convert svn:ignore properties to .gitignore.'
-
-# Create bare repository
-git init --bare $git_repo
+test -d $git_repo || mkdir -p $git_repo
 cd $git_repo
-git symbolic-ref HEAD refs/heads/trunk
+svn2git $svn_repo --trunk trunk --verbose --authors ~/temp/authors.txt
 
-# Push temporary repository to the bare repository
-cd ~/temp
-git remote add bare $git_repo
-git config remote.bare.push 'refs/remotes/*:refs/heads/*'
-git push bare
-
-# Rename trunk to master
-cd $git_repo
-git branch -m trunk master
-
-# Clean up branches and tags converting them to actual Git tags
-git for-each-ref --format='%(refname)' refs/heads/tags | cut -d / -f 4 |
-while read ref
-do
-  git tag "$ref" "refs/heads/tags/$ref";
-  git branch -D "tags/$ref";
-done
-
+echo "Conversion successful!"
 exit 0
