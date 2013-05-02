@@ -75,7 +75,7 @@ while read line; do
   authors=`awk -F '|' '/^r/ {sub("^ ", "", $2); sub(" $", "", $2); print $2";"}' | sort -u`
 done < <(svn log -q $svn_repo)
 
-if $parse_names;
+if $prompt_author;
 then
   echo "Starting credential conversion from 'username' to 'Forename Surname <email@address.com>'"
   echo "Entering empty values will cause a fallback to 'username <username>'"
