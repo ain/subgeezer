@@ -19,3 +19,6 @@ NB! Make sure to provide root URL with the trunk in it!
 
 ## Requirements
 svn2git - https://github.com/nirvdrum/svn2git
+
+## Support
+File an issue on Github or ping [@tekkie](http://twitter.com/tekkie) on Twitter.
