@@ -103,7 +103,7 @@ done
 
 test -d $git_repo || mkdir -p $git_repo
 cd $git_repo
-svn2git $svn_repo --trunk trunk --verbose --authors ~/temp/authors.txt
+svn2git $svn_repo --trunk trunk --verbose --authors ~/temp/authors.txt --no-minimize-url
 
 echo "Conversion successful!"
 exit 0
