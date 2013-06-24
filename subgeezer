@@ -1,7 +1,7 @@
 #!/bin/bash
 
 usage="Usage: subgeezer [options] svn_root_url git_repository_path"
-help="subgeezer SVN to Git converter
+help="subgeezer SVN to Git converter (v1.0.0)
 
 ${usage}
 
