@@ -1,15 +1,16 @@
 #!/bin/bash
 
-usage="Usage: subgeezer [options] svn_root_url git_repository_path"
-help="subgeezer SVN to Git converter (v1.0.0)
+usage="Usage: subgeezer [-hnb] svn_root_url git_repository_path"
+help="subgeezer SVN to Git converter (v1.1.0)
 
 ${usage}
 
 Options:
-  -h, --help    Display help
+  -h            Display help
   -n            Prompt for Git User <email> to convert SVN usernames in log
+  -b            Do not convert branches (for svn2git --nobranches)
 
-Example: subgeezer -n http://swfobject.googlecode.com/svn ~/swfObject.git"
+Example: subgeezer -nb http://swfobject.googlecode.com/svn ~/swfObject.git"
 
 err[1]="Invalid command"
 err[2]="SVN client is required"
@@ -43,10 +44,6 @@ then
   echo "${err[1]}"
   echo "${usage}"
   exit 1
-elif [[ "$1" == "--help" || "$1" == "-h" ]]
-then
-  echo "${help}"
-  exit 0
 elif [[ "$#" < 2 ]]
 then
   echo "${err[1]}"
@@ -54,16 +51,33 @@ then
   exit 1
 fi
 
+prompt_author=false
+branches=""
+
 # Parse command arguments
-if [ "$1" == "-n" ]
+while getopts "h:nb:" flag
+do
+  case "$flag" in
+    h)
+      echo "${help}"
+      exit 0
+      ;;
+    n)
+      prompt_author=true
+      ;;
+    b)
+      branches="--nobranches"
+      ;;
+  esac
+done
+
+if [ "$#" == 2 ]
 then
-  prompt_author=true
-  svn_repo=$2
-  git_repo=$3
-else
-  prompt_author=false
   svn_repo=$1
   git_repo=$2
+else
+  svn_repo=$2
+  git_repo=$3
 fi
 
 # Ensure temp folder exists
@@ -103,7 +117,7 @@ done
 
 test -d $git_repo || mkdir -p $git_repo
 cd $git_repo
-svn2git $svn_repo --trunk trunk --verbose --authors ~/temp/authors.txt --no-minimize-url
+svn2git $svn_repo --trunk trunk $branches --verbose --authors ~/temp/authors.txt --no-minimize-url
 
 echo "Conversion completed."
 exit 0
