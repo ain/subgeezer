@@ -6,14 +6,15 @@ prompt you to convert SVN `username` to Git `Forename Surname <name@email.com>`
 format.
 
 ## Usage
-`subgeezer [options] svn_root_url git_repository_path`
+`subgeezer [-hnb] svn_root_url git_repository_path`
 
 ## Options
-    -h, --help    Display help
+    -h            Display help
     -n            Prompt for Git User <email> to convert SVN usernames in log
+    -b            Do not convert branches (for svn2git --nobranches)
 
 ## Example usage:
-`subgeezer -n http://swfobject.googlecode.com/svn ~/swfObject.git`
+`subgeezer -nb http://swfobject.googlecode.com/svn ~/swfObject.git`
 
 NB! Make sure to provide root URL with the trunk in it!
 
