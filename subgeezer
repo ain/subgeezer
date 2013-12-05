@@ -132,5 +132,8 @@ test -d $git_repo || mkdir -p $git_repo
 cd $git_repo
 svn2git $svn_repo --verbose --authors ~/temp/authors.txt --no-minimize-url --trunk $trunk $branches $tags
 
+# Set newly created repository to bare repository
+git config --bool core.bare true
+
 echo "Conversion completed."
 exit 0
