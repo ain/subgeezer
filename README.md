@@ -14,7 +14,7 @@ format.
     -b            Do not convert branches (for svn2git --nobranches)
     -r            Root is trunk without tags and branches (for svn2git --rootistrunk)
 
-## Example usage:
+## Example usage
 `subgeezer -nb http://swfobject.googlecode.com/svn ~/swfObject.git`
 
 NB! Make sure to provide root URL with the trunk in it!
@@ -23,4 +23,4 @@ NB! Make sure to provide root URL with the trunk in it!
 svn2git - https://github.com/nirvdrum/svn2git
 
 ## Support
-File an issue on Github or ping [@tekkie](http://twitter.com/tekkie) on Twitter.
+[File an issue](https://github.com/ain/subgeezer/issues/new) on Github or ping [@tekkie](http://twitter.com/tekkie) on Twitter.
