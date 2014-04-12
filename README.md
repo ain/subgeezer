@@ -13,6 +13,7 @@ format.
     -n            Prompt for Git User <email> to convert SVN usernames in log
     -b            Do not convert branches (for svn2git --nobranches)
     -r            Root is trunk without tags and branches (for svn2git --rootistrunk)
+    -v            Display version
 
 ## Example usage
 `subgeezer -nb http://swfobject.googlecode.com/svn ~/swfObject.git`
