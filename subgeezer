@@ -1,7 +1,8 @@
 #!/bin/bash
 
 usage="Usage: subgeezer [-hnbr] svn_root_url git_repository_path"
-help="subgeezer SVN to Git converter (v1.3.0)
+version="v1.3.0"
+help="subgeezer SVN to Git converter (${version})
 
 ${usage}
 
@@ -10,6 +11,7 @@ Options:
   -n            Prompt for Git User <email> to convert SVN usernames in log
   -b            Do not convert branches (for svn2git --nobranches)
   -r            Root is trunk without tags and branches (for svn2git --rootistrunk)
+  -v            Display version
 
 Example: subgeezer -nb http://swfobject.googlecode.com/svn ~/swfObject.git"
 
@@ -45,7 +47,7 @@ then
   echo "${err[1]}"
   echo "${usage}"
   exit 1
-elif [[ "$#" < 2 && $1 != "-h" ]]
+elif [[ "$#" < 2 && $1 != "-h" && $1 != "-v" ]]
 then
   echo "${err[1]}"
   echo "${usage}"
@@ -58,11 +60,15 @@ trunk="trunk"
 tags=""
 
 # Parse command arguments
-while getopts "hnbr" flag
+while getopts "hvnbr" flag
 do
   case "$flag" in
     h)
       echo "${help}"
+      exit 0
+      ;;
+    v)
+      echo "${version}"
       exit 0
       ;;
     r)
