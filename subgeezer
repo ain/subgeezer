@@ -18,7 +18,9 @@ Example: subgeezer -nb http://swfobject.googlecode.com/svn ~/swfObject.git"
 err[1]="Invalid command"
 err[2]="SVN client is required"
 err[3]="Git client is required"
-err[4]="svn2git is required, see https://github.com/nirvdrum/svn2git"
+err[4]="svn2git is required.
+Install with: gem install svn2git
+For more see https://github.com/nirvdrum/svn2git"
 
 # Check for SVN client
 if [ -z `which svn` ]
