@@ -1,3 +1,6 @@
+# subgeezer 1.4.0
+# Copyright © 2013-2014 Ain Tohvri; Licensed GPL
+
 #!/bin/bash
 
 usage="Usage: subgeezer [-hnbr] svn_root_url git_repository_path"

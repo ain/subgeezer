@@ -25,3 +25,6 @@ svn2git - https://github.com/nirvdrum/svn2git
 
 ## Support
 [File an issue](https://github.com/ain/subgeezer/issues/new) on Github or ping [@tekkie](http://twitter.com/tekkie) on Twitter.
+
+## Licence
+[![GPLv3](gplv3-127x51.png)](https://raw.githubusercontent.com/ain/subgeezer/master/LICENSE)
