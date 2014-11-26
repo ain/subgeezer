@@ -1,10 +1,10 @@
-# subgeezer 1.4.0
+# subgeezer 1.4.1
 # Copyright © 2013-2014 Ain Tohvri; Licensed GPL
 
 #!/bin/bash
 
 usage="Usage: subgeezer [-hnbr] svn_root_url git_repository_path"
-version="v1.4.0"
+version="v1.4.1"
 help="subgeezer SVN to Git converter (${version})
 
 ${usage}
@@ -22,7 +22,7 @@ err[1]="Invalid command"
 err[2]="SVN client is required"
 err[3]="Git client is required"
 err[4]="svn2git is required.
-Install with: gem install svn2git
+Install with: sudo gem install svn2git
 For more see https://github.com/nirvdrum/svn2git"
 
 # Check for SVN client
